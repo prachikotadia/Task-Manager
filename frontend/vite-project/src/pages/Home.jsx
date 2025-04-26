@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import TaskCard from "../components/TaskCard";
 import axios from "axios";
 
-const API_URL = "http://localhost:8000"; // Use your deployed URL later
+// Replace with your live Render URL
+const API_URL = "https://user-service-10h5.onrender.com";
 
 export default function Home() {
   const [tasks, setTasks] = useState([]);
@@ -12,8 +13,12 @@ export default function Home() {
 
   const fetchTasks = async () => {
     setLoading(true);
-    const res = await axios.get(`${API_URL}/user-with-tasks`);
-    setTasks(res.data.tasks || []);
+    try {
+      const res = await axios.get(`${API_URL}/user-with-tasks`);
+      setTasks(res.data.tasks || []);
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error);
+    }
     setLoading(false);
   };
 
@@ -24,29 +29,41 @@ export default function Home() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return alert("Fill in all fields");
-    await axios.post("http://localhost:8001/tasks", { title, description });
-    setTitle("");
-    setDescription("");
-    fetchTasks();
-    alert("Task added successfully!");
+    try {
+      await axios.post(`${API_URL.replace("/user-with-tasks", "")}/tasks`, { title, description });
+      setTitle("");
+      setDescription("");
+      fetchTasks();
+      alert("Task added successfully!");
+    } catch (error) {
+      console.error("Failed to add task:", error);
+    }
   };
 
   const handleDelete = async (id) => {
-    await axios.delete(`http://localhost:8001/tasks/${id}`);
-    fetchTasks();
-    alert("Task deleted!");
+    try {
+      await axios.delete(`${API_URL.replace("/user-with-tasks", "")}/tasks/${id}`);
+      fetchTasks();
+      alert("Task deleted!");
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
   };
 
   const handleUpdate = async (task) => {
     const newTitle = prompt("New title", task.title);
     const newDesc = prompt("New description", task.description);
     if (newTitle && newDesc) {
-      await axios.put(`http://localhost:8001/tasks/${task.id}`, {
-        title: newTitle,
-        description: newDesc,
-      });
-      fetchTasks();
-      alert("Task updated!");
+      try {
+        await axios.put(`${API_URL.replace("/user-with-tasks", "")}/tasks/${task.id}`, {
+          title: newTitle,
+          description: newDesc,
+        });
+        fetchTasks();
+        alert("Task updated!");
+      } catch (error) {
+        console.error("Failed to update task:", error);
+      }
     }
   };
 
