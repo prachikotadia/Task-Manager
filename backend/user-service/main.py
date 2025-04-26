@@ -2,12 +2,66 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from passlib.context import CryptContext
+
 import httpx
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 
+
+
+# Database URL from Render or Local
+DATABASE_URL = "postgresql://task_manager_db_d9cz_user:NZYbPSCUfLL4YmYMH3EVkySstd8Rx6X8@dpg-d066fbali9vc73e20nhg-a/task_manager_db_d9cz"
+
+engine = create_engine(DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# Password Hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# User Table
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+
+# Create tables
+Base.metadata.create_all(bind=engine)
+
+
 # --- CORS Setup ---
 app = FastAPI()
+
+# Dependency to get database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/signup")
+def signup(user: SignupRequest, db: Session = Depends(get_db)):
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    
+    hashed_password = pwd_context.hash(user.password)
+    new_user = User(username=user.username, hashed_password=hashed_password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {"message": "Signup successful"}
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,11 +78,26 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60  # Token valid for 60 minutes
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# --- Dummy User (for now) ---
-fake_user = {
-    "username": "prachi",
-    "password": "admin123",  # Later you can hash this password properly
-}
+@app.post("/login")
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+    if not pwd_context.verify(form_data.password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = jwt.encode(
+        {
+            "sub": user.username,
+            "exp": datetime.utcnow() + access_token_expires
+        },
+        SECRET_KEY,
+        algorithm=ALGORITHM
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 # --- Models ---
 class Token(BaseModel):
@@ -62,19 +131,6 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
     return User(username=username)
 
-# --- Routes ---
-
-@app.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    if form_data.username != fake_user["username"] or form_data.password != fake_user["password"]:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": fake_user["username"]},
-        expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
 
 @app.get("/me", response_model=User)
 def read_users_me(current_user: User = Depends(get_current_user)):

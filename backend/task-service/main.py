@@ -6,6 +6,8 @@ from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
+from passlib.context import CryptContext
+
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL","postgresql://task_manager_db_d9cz_user:NZYbPSCUfLL4YmYMH3EVkySstd8Rx6X8@dpg-d066fbali9vc73e20nhg-a/task_manager_db_d9cz")
