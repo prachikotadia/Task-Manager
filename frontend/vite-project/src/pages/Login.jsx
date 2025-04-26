@@ -2,28 +2,31 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-
 export default function Login() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  // ✅ Correct, and we'll use it properly
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("https://user-service-10h5.onrender.com/login", {
-        username,
-        password,
-      }, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      const formData = new FormData();
+      formData.append("username", username);
+      formData.append("password", password);
+
+      const res = await axios.post("https://user-service-10h5.onrender.com/login", formData, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",  // Very important
+        },
       });
 
-      const { access_token } = res.data;
-      localStorage.setItem("token", access_token);
+      const token = res.data.access_token;
+      localStorage.setItem("token", token);
       alert("Login successful!");
-      navigate("/");
-    // eslint-disable-next-line no-unused-vars
+
+      navigate("/"); // ✅ Properly using useNavigate()
     } catch (err) {
+      console.error("Login error:", err);
       alert("Login failed. Please check your credentials.");
     }
   };

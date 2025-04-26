@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from fastapi import Depends
 from sqlalchemy import create_engine, Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -63,13 +64,15 @@ def signup(user: SignupRequest, db: Session = Depends(get_db)):
 
     return {"message": "Signup successful"}
 
+# --- CORS Setup ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Frontend URL in production
+    allow_origins=["*", "http://localhost:5173"],  # Allow localhost for frontend
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --- JWT Configuration ---
 SECRET_KEY = "prachi-super-secret-key"  # In production, move this to an environment variable!
@@ -104,8 +107,17 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-class User(BaseModel):
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(255), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+
+class UserSchema(BaseModel):
     username: str
+
+    class Config:
+        orm_mode = True
 
 # --- Create Access Token ---
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -116,7 +128,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     return encoded_jwt
 
 # --- Get Current User ---
-def get_current_user(token: str = Depends(oauth2_scheme)):
+def get_current_user(token: str = Depends(oauth2_scheme)) -> UserSchema:
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
@@ -132,8 +144,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return User(username=username)
 
 
-@app.get("/me", response_model=User)
-def read_users_me(current_user: User = Depends(get_current_user)):
+@app.get("/me", response_model=UserSchema)
+def read_users_me(current_user: UserSchema = Depends(get_current_user)):
     return current_user
 
 @app.get("/user-with-tasks")
