@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import TaskCard from "../components/TaskCard";
 import axios from "axios";
 
-// Replace with your live Render URL
-const API_URL = "https://user-service-10h5.onrender.com";
+// LIVE URLs
+const USER_SERVICE_URL = "https://user-service-10h5.onrender.com";
+const TASK_SERVICE_URL = "https://task-service-mf2x.onrender.com";
 
 export default function Home() {
   const [tasks, setTasks] = useState([]);
@@ -14,7 +15,7 @@ export default function Home() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/user-with-tasks`);
+      const res = await axios.get(`${USER_SERVICE_URL}/user-with-tasks`);
       setTasks(res.data.tasks || []);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
@@ -30,7 +31,7 @@ export default function Home() {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return alert("Fill in all fields");
     try {
-      await axios.post(`${API_URL.replace("/user-with-tasks", "")}/tasks`, { title, description });
+      await axios.post(`${TASK_SERVICE_URL}/tasks`, { title, description });
       setTitle("");
       setDescription("");
       fetchTasks();
@@ -42,7 +43,7 @@ export default function Home() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_URL.replace("/user-with-tasks", "")}/tasks/${id}`);
+      await axios.delete(`${TASK_SERVICE_URL}/tasks/${id}`);
       fetchTasks();
       alert("Task deleted!");
     } catch (error) {
@@ -55,7 +56,7 @@ export default function Home() {
     const newDesc = prompt("New description", task.description);
     if (newTitle && newDesc) {
       try {
-        await axios.put(`${API_URL.replace("/user-with-tasks", "")}/tasks/${task.id}`, {
+        await axios.put(`${TASK_SERVICE_URL}/tasks/${task.id}`, {
           title: newTitle,
           description: newDesc,
         });
@@ -95,6 +96,8 @@ export default function Home() {
           Add Task
         </button>
       </form>
+
+
 
       {/* Task list */}
       <div className="w-full max-w-2xl mt-10 flex flex-col gap-4">

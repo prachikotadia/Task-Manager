@@ -15,7 +15,7 @@ app.add_middleware(
 )
 
 # Read from environment
-TASK_SERVICE_URL = os.getenv("TASK_SERVICE_URL")
+TASK_SERVICE_URL = os.getenv("https://task-service-mf2x.onrender.com")
 
 @app.get("/")
 def root():
