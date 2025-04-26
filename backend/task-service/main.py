@@ -50,6 +50,9 @@ def get_tasks():
     tasks = db.query(TaskDB).all()
     db.close()
     return [{"id": task.id, "title": task.title, "description": task.description} for task in tasks]
+@app.get("/")
+def root():
+    return {"message": "Task Service is Running!"}
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, updated_task: Task):
