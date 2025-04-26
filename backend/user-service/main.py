@@ -1,42 +1,27 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
-import os
 
 app = FastAPI()
 
-# CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For now allow all origins, later we can restrict
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Read from environment
-TASK_SERVICE_URL = os.getenv("https://task-service-mf2x.onrender.com")
-
-@app.get("/")
-def root():
-    return {"message": "User-service is working"}
+TASK_SERVICE_URL = "https://task-service-mf2x.onrender.com"  # LIVE TASK SERVICE
 
 @app.get("/user-with-tasks")
 async def user_with_tasks():
-    if not TASK_SERVICE_URL:
-        raise HTTPException(status_code=500, detail="TASK_SERVICE_URL is missing!")
-    
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{TASK_SERVICE_URL}/tasks")
-            response.raise_for_status()  # If not 200, this will raise
-            tasks = response.json()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch tasks: {str(e)}")
-
-    user_info = {
-        "name": "Prachi",
-        "role": "admin"
-    }
-
+    user_info = {"name": "Prachi", "role": "admin"}
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{TASK_SERVICE_URL}/tasks")
+        tasks = response.json()
     return {"user": user_info, "tasks": tasks}
+
+@app.get("/")
+def root():
+    return {"message": "hello"}
