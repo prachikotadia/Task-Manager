@@ -34,13 +34,15 @@ app = FastAPI()
 # CORS
 from fastapi.middleware.cors import CORSMiddleware
 
+# --- CORS Setup ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # Allow all origins
+    allow_origins=["http://localhost:5173", "https://taskmanager-git-main-prachis-projects-33b4ec24.vercel.app/"],  # Only your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 # JWT config
@@ -92,7 +94,6 @@ def signup(user: SignupRequest, db: Session = Depends(get_db)):
 @app.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.username == form_data.username).first()
-
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     
@@ -110,6 +111,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 # Get current user
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserSchema:
