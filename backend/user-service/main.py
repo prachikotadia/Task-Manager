@@ -35,14 +35,15 @@ app = FastAPI()
 from fastapi.middleware.cors import CORSMiddleware
 
 # --- CORS Setup ---
+
+origins = ["http://localhost:5173", "https://taskmanager-git-main-prachis-projects-33b4ec24.vercel.app/"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://taskmanager-git-main-prachis-projects-33b4ec24.vercel.app/"],  # Only your frontend URL
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 
 # JWT config
